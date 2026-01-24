@@ -1,0 +1,249 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: X-Zero DID Login Platform
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: provided.al2
+    Architectures:
+      - arm64
+    Environment:
+      Variables:
+        SUPABASE_URL: !Ref SupabaseURL
+        SUPABASE_API_KEY: !Ref SupabaseAPIKey
+        DB_PASSWORD: !Ref DBPassword
+        JWT_SECRET: !Ref JWTSecret
+        JWT_EXPIRY: 168h
+
+Parameters:
+  SupabaseURL:
+    Type: String
+    Description: Supabase project URL
+  SupabaseAPIKey:
+    Type: String
+    Description: Supabase API key
+    NoEcho: true
+  DBPassword:
+    Type: String
+    Description: Supabase database password
+    NoEcho: true
+  JWTSecret:
+    Type: String
+    Description: JWT secret key
+    NoEcho: true
+
+Resources:
+  # API Gateway
+  XZeroAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'*'"
+
+  # Auth Functions
+  RegisterFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: go/
+      Handler: bootstrap
+      Events:
+        Register:
+          Type: Api
+          Properties:
+            RestApiId: !Ref XZeroAPI
+            Path: /api/auth/register
+            Method: POST
+
+  LoginFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: go/
+      Handler: bootstrap
+      Events:
+        Login:
+          Type: Api
+          Properties:
+            RestApiId: !Ref XZeroAPI
+            Path: /api/auth/login
+            Method: POST
+
+  RecoverFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: go/
+      Handler: bootstrap
+      Events:
+        Recover:
+          Type: Api
+          Properties:
+            RestApiId: !Ref XZeroAPI
+            Path: /api/auth/recover
+            Method: POST
+
+  ResetPasswordFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: go/
+      Handler: bootstrap
+      Events:
+        ResetPassword:
+          Type: Api
+          Properties:
+            RestApiId: !Ref XZeroAPI
+            Path: /api/auth/reset-password
+            Method: POST
+
+  # User Functions
+  GetProfileFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: go/
+      Handler: bootstrap
+      Events:
+        GetProfile:
+          Type: Api
+          Properties:
+            RestApiId: !Ref XZeroAPI
+            Path: /api/user/profile
+            Method: GET
+
+  # Project Functions
+  ListProjectsFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: go/
+      Handler: bootstrap
+      Events:
+        ListProjects:
+          Type: Api
+          Properties:
+            RestApiId: !Ref XZeroAPI
+            Path: /api/projects
+            Method: GET
+
+  UpdateProjectFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: go/
+      Handler: bootstrap
+      Events:
+        UpdateProject:
+          Type: Api
+          Properties:
+            RestApiId: !Ref XZeroAPI
+            Path: /api/projects/{id}
+            Method: PUT
+
+  # App Functions
+  ListAppsFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: go/
+      Handler: bootstrap
+      Events:
+        ListApps:
+          Type: Api
+          Properties:
+            RestApiId: !Ref XZeroAPI
+            Path: /api/projects/{id}/apps
+            Method: GET
+
+  CreateAppFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: go/
+      Handler: bootstrap
+      Events:
+        CreateApp:
+          Type: Api
+          Properties:
+            RestApiId: !Ref XZeroAPI
+            Path: /api/apps
+            Method: POST
+
+  UpdateAppFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: go/
+      Handler: bootstrap
+      Events:
+        UpdateApp:
+          Type: Api
+          Properties:
+            RestApiId: !Ref XZeroAPI
+            Path: /api/apps/{id}
+            Method: PUT
+
+  DeleteAppFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: go/
+      Handler: bootstrap
+      Events:
+        DeleteApp:
+          Type: Api
+          Properties:
+            RestApiId: !Ref XZeroAPI
+            Path: /api/apps/{id}
+            Method: DELETE
+
+  SetAppGlobalFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: go/
+      Handler: bootstrap
+      Events:
+        SetAppGlobal:
+          Type: Api
+          Properties:
+            RestApiId: !Ref XZeroAPI
+            Path: /api/apps/{id}/set-global
+            Method: PUT
+
+  ToggleAppFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: go/
+      Handler: bootstrap
+      Events:
+        ToggleApp:
+          Type: Api
+          Properties:
+            RestApiId: !Ref XZeroAPI
+            Path: /api/projects/{id}/apps/{appId}/toggle
+            Method: PUT
+
+Outputs:
+  XZeroAPIEndpoint:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${XZeroAPI}.execute-api.${AWS::Region}.amazonaws.com/prod/"

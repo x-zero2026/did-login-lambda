@@ -1,0 +1,10 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "xz-login"
+s3_prefix = "xz-login"
+region = "us-east-1"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "SupabaseURL=\"https://your-project.supabase.co\" SupabaseAPIKey=\"your-api-key\" DBPassword=\"your-password\" JWTSecret=\"your-secret\""
+image_repositories = []

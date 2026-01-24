@@ -1,0 +1,53 @@
+# AWS SAM
+.aws-sam/
+samconfig.toml
+
+# Environment variables
+env.json
+.env
+.env.local
+.env.*.local
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# Build artifacts
+bootstrap
+main
+*.zip
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Coverage
+*.coverprofile
+coverage.txt
+coverage.html
+
+# Vendor (if using)
+vendor/
+
+# OS
+Thumbs.db
+.Spotlight-V100
+.Trashes
