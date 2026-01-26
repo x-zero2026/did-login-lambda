@@ -7,6 +7,7 @@ type User struct {
 	DID          string    `json:"did"`
 	Email        string    `json:"email"`
 	Username     string    `json:"username"`
+	EthAddress   string    `json:"eth_address"`
 	PasswordHash string    `json:"-"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`

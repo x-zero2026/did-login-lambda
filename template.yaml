@@ -15,6 +15,9 @@ Globals:
         DB_PASSWORD: !Ref DBPassword
         JWT_SECRET: !Ref JWTSecret
         JWT_EXPIRY: 168h
+        VAULT_ADDR: !Ref VaultAddr
+        VAULT_TOKEN: !Ref VaultToken
+        SEPOLIA_RPC_URL: !Ref SepoliaRPCURL
 
 Parameters:
   SupabaseURL:
@@ -32,6 +35,18 @@ Parameters:
     Type: String
     Description: JWT secret key
     NoEcho: true
+  VaultAddr:
+    Type: String
+    Description: Vault server address
+    Default: "http://vault:8200"
+  VaultToken:
+    Type: String
+    Description: Vault access token
+    NoEcho: true
+  SepoliaRPCURL:
+    Type: String
+    Description: Sepolia RPC URL
+    Default: "https://eth-sepolia.g.alchemy.com/v2/YOUR_API_KEY"
 
 Resources:
   # API Gateway
@@ -242,6 +257,23 @@ Resources:
             RestApiId: !Ref XZeroAPI
             Path: /api/projects/{id}/apps/{appId}/toggle
             Method: PUT
+
+  # Blockchain Functions
+  ApproveEscrowFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: go/
+      Handler: bootstrap
+      Timeout: 60
+      Events:
+        ApproveEscrow:
+          Type: Api
+          Properties:
+            RestApiId: !Ref XZeroAPI
+            Path: /api/approve-escrow
+            Method: POST
 
 Outputs:
   XZeroAPIEndpoint:

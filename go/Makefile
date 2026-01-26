@@ -1,4 +1,4 @@
-.PHONY: build-RegisterFunction build-LoginFunction build-RecoverFunction build-ResetPasswordFunction build-GetProfileFunction build-ListProjectsFunction build-UpdateProjectFunction build-ListAppsFunction build-CreateAppFunction build-UpdateAppFunction build-DeleteAppFunction build-SetAppGlobalFunction build-ToggleAppFunction
+.PHONY: build-RegisterFunction build-LoginFunction build-RecoverFunction build-ResetPasswordFunction build-GetProfileFunction build-ListProjectsFunction build-UpdateProjectFunction build-ListAppsFunction build-CreateAppFunction build-UpdateAppFunction build-DeleteAppFunction build-SetAppGlobalFunction build-ToggleAppFunction build-ApproveEscrowFunction
 
 build-RegisterFunction:
 	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o $(ARTIFACTS_DIR)/bootstrap ./cmd/register/main.go
@@ -38,3 +38,6 @@ build-SetAppGlobalFunction:
 
 build-ToggleAppFunction:
 	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o $(ARTIFACTS_DIR)/bootstrap ./cmd/toggle-app/main.go
+
+build-ApproveEscrowFunction:
+	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o $(ARTIFACTS_DIR)/bootstrap ./cmd/approve-escrow/main.go

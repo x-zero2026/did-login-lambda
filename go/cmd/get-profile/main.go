@@ -15,6 +15,18 @@ import (
 func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	fmt.Println("=== GetProfile Handler Started ===")
 	
+	// Handle CORS preflight
+	if request.HTTPMethod == "OPTIONS" {
+		return events.APIGatewayProxyResponse{
+			StatusCode: 200,
+			Headers: map[string]string{
+				"Access-Control-Allow-Origin":  "*",
+				"Access-Control-Allow-Headers": "Content-Type,Authorization",
+				"Access-Control-Allow-Methods": "GET,OPTIONS",
+			},
+		}, nil
+	}
+	
 	// Initialize database
 	fmt.Println("Initializing database...")
 	if err := db.InitDB(); err != nil {
@@ -48,9 +60,9 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 	pool := db.GetPool()
 	var user models.User
 	err = pool.QueryRow(ctx,
-		"SELECT did, email, username, created_at, updated_at FROM users WHERE did = $1",
+		"SELECT did, email, username, eth_address, created_at, updated_at FROM users WHERE did = $1",
 		claims.DID,
-	).Scan(&user.DID, &user.Email, &user.Username, &user.CreatedAt, &user.UpdatedAt)
+	).Scan(&user.DID, &user.Email, &user.Username, &user.EthAddress, &user.CreatedAt, &user.UpdatedAt)
 
 	if err != nil {
 		fmt.Printf("Database query error: %v\n", err)
