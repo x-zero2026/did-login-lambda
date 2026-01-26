@@ -12,6 +12,7 @@ import (
 	"github.com/x-zero/did-login/pkg/auth"
 	"github.com/x-zero/did-login/pkg/db"
 	"github.com/x-zero/did-login/pkg/response"
+	"github.com/x-zero/did-login/pkg/vault"
 )
 
 type RegisterRequest struct {
@@ -21,13 +22,14 @@ type RegisterRequest struct {
 }
 
 type RegisterResponse struct {
-	DID      string `json:"did"`
-	Username string `json:"username"`
-	Mnemonic string `json:"mnemonic"`
-	Token    string `json:"token"`
+	DID        string `json:"did"`
+	EthAddress string `json:"eth_address"`
+	Username   string `json:"username"`
+	Mnemonic   string `json:"mnemonic"`
+	Token      string `json:"token"`
 }
 
-var usernameRegex = regexp.MustCompile(`^[a-zA-Z]([a-zA-Z-]*[a-zA-Z])?$`)
+var usernameRegex = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$`)
 
 func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	defer func() {
@@ -35,6 +37,19 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 			fmt.Printf("PANIC: %v\n", r)
 		}
 	}()
+	
+	// Handle OPTIONS request for CORS
+	if request.HTTPMethod == "OPTIONS" {
+		return events.APIGatewayProxyResponse{
+			StatusCode: 200,
+			Headers: map[string]string{
+				"Access-Control-Allow-Origin":  "*",
+				"Access-Control-Allow-Headers": "Content-Type,Authorization",
+				"Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
+			},
+			Body: "",
+		}, nil
+	}
 	
 	fmt.Println("=== Register Handler Started ===")
 	fmt.Printf("Request Body: %s\n", request.Body)
@@ -65,7 +80,7 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 		return response.Error(400, "Username must be 255 characters or less")
 	}
 	if !usernameRegex.MatchString(req.Username) {
-		return response.Error(400, "Username must contain only letters and hyphens, cannot start or end with hyphen")
+		return response.Error(400, "Username must contain only letters, numbers and hyphens, cannot start or end with hyphen")
 	}
 
 	// Validate email format (basic)
@@ -90,6 +105,14 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 	if err != nil {
 		return response.Error(500, "Failed to generate DID")
 	}
+	fmt.Printf("Generated DID: %s\n", did)
+
+	// Derive Ethereum address from the same mnemonic
+	ethAddress, err := auth.DeriveEthereumAddress(mnemonic)
+	if err != nil {
+		return response.Error(500, "Failed to derive Ethereum address")
+	}
+	fmt.Printf("Derived Ethereum address: %s\n", ethAddress)
 
 	// Hash password
 	passwordHash, err := auth.HashPassword(req.Password)
@@ -106,12 +129,13 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 
 	// Insert user
 	_, err = tx.Exec(ctx,
-		"INSERT INTO users (did, email, username, password_hash) VALUES ($1, $2, $3, $4)",
-		did, req.Email, req.Username, passwordHash,
+		"INSERT INTO users (did, eth_address, email, username, password_hash) VALUES ($1, $2, $3, $4, $5)",
+		did, ethAddress, req.Email, req.Username, passwordHash,
 	)
 	if err != nil {
 		return response.Error(500, fmt.Sprintf("Failed to create user: %v", err))
 	}
+	fmt.Println("User inserted into database")
 
 	// Create default project (project name = username)
 	var projectID string
@@ -136,6 +160,22 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 	if err := tx.Commit(ctx); err != nil {
 		return response.Error(500, "Failed to commit transaction")
 	}
+	fmt.Println("Transaction committed")
+
+	// Store mnemonic in Vault
+	vaultClient, err := vault.NewClient()
+	if err != nil {
+		fmt.Printf("Warning: Failed to create Vault client: %v\n", err)
+		// Continue without storing in Vault (for local development)
+	} else {
+		err = vaultClient.StoreMnemonic(did, mnemonic)
+		if err != nil {
+			fmt.Printf("Warning: Failed to store mnemonic in Vault: %v\n", err)
+			// Continue without storing in Vault
+		} else {
+			fmt.Println("Mnemonic stored in Vault successfully")
+		}
+	}
 
 	// Generate JWT token
 	token, err := auth.GenerateToken(did, req.Username)
@@ -145,10 +185,11 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 
 	// Return response
 	return response.Success(RegisterResponse{
-		DID:      did,
-		Username: req.Username,
-		Mnemonic: mnemonic,
-		Token:    token,
+		DID:        did,
+		EthAddress: ethAddress,
+		Username:   req.Username,
+		Mnemonic:   mnemonic,
+		Token:      token,
 	})
 }
 

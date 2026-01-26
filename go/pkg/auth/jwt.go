@@ -94,3 +94,17 @@ func ExtractTokenFromHeader(authHeader string) (string, error) {
 
 	return authHeader[len(bearerPrefix):], nil
 }
+
+// ValidateTokenAndGetDID validates a JWT token and returns the DID
+func ValidateTokenAndGetDID(tokenString string) (string, error) {
+	claims, err := ValidateToken(tokenString)
+	if err != nil {
+		return "", err
+	}
+
+	if claims.DID == "" {
+		return "", fmt.Errorf("DID not found in token claims")
+	}
+
+	return claims.DID, nil
+}
