@@ -4,13 +4,15 @@ import "time"
 
 // User represents a user in the system
 type User struct {
-	DID          string    `json:"did"`
-	Email        string    `json:"email"`
-	Username     string    `json:"username"`
-	EthAddress   string    `json:"eth_address"`
-	PasswordHash string    `json:"-"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	DID            string   `json:"did"`
+	Email          string   `json:"email"`
+	Username       string   `json:"username"`
+	EthAddress     string   `json:"eth_address"`
+	Bio            string   `json:"bio,omitempty"`
+	ProfessionTags []string `json:"profession_tags,omitempty"`
+	PasswordHash   string   `json:"-"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 }
 
 // Project represents a project
@@ -61,4 +63,34 @@ type AppWithCreator struct {
 	URL            string `json:"url"`
 	IsGlobal       bool   `json:"is_global"`
 	CreatedBy      string `json:"created_by"`
+}
+
+// ProjectMember represents a project member with user info
+type ProjectMember struct {
+	DID            string   `json:"did"`
+	Username       string   `json:"username"`
+	Email          string   `json:"email"`
+	ProfessionTags []string `json:"profession_tags,omitempty"`
+	Role           string   `json:"role"`
+	JoinedAt       time.Time `json:"joined_at"`
+	IsCreator      bool     `json:"is_creator"`
+}
+
+// ProjectDetail includes project info and members
+type ProjectDetail struct {
+	ProjectID   string          `json:"project_id"`
+	ProjectName string          `json:"project_name"`
+	CreatorDID  string          `json:"creator_did"`
+	UserRole    string          `json:"user_role"` // Current user's role in this project
+	Members     []ProjectMember `json:"members"`
+	CreatedAt   time.Time       `json:"created_at"`
+	UpdatedAt   time.Time       `json:"updated_at"`
+}
+
+// UserSearchResult represents a user in search results
+type UserSearchResult struct {
+	DID            string   `json:"did"`
+	Username       string   `json:"username"`
+	Email          string   `json:"email"`
+	ProfessionTags []string `json:"profession_tags,omitempty"`
 }

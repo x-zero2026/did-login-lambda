@@ -55,7 +55,7 @@ Resources:
     Properties:
       StageName: prod
       Cors:
-        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowMethods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
         AllowHeaders: "'Content-Type,Authorization'"
         AllowOrigin: "'*'"
 
@@ -136,6 +136,36 @@ Resources:
             Path: /api/user/profile
             Method: GET
 
+  UpdateProfileFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: go/
+      Handler: bootstrap
+      Events:
+        UpdateProfile:
+          Type: Api
+          Properties:
+            RestApiId: !Ref XZeroAPI
+            Path: /api/user/profile
+            Method: PATCH
+
+  SearchUsersFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: go/
+      Handler: bootstrap
+      Events:
+        SearchUsers:
+          Type: Api
+          Properties:
+            RestApiId: !Ref XZeroAPI
+            Path: /api/users/search
+            Method: GET
+
   # Project Functions
   ListProjectsFunction:
     Type: AWS::Serverless::Function
@@ -152,6 +182,21 @@ Resources:
             Path: /api/projects
             Method: GET
 
+  GetProjectFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: go/
+      Handler: bootstrap
+      Events:
+        GetProject:
+          Type: Api
+          Properties:
+            RestApiId: !Ref XZeroAPI
+            Path: /api/projects/{id}
+            Method: GET
+
   UpdateProjectFunction:
     Type: AWS::Serverless::Function
     Metadata:
@@ -166,6 +211,66 @@ Resources:
             RestApiId: !Ref XZeroAPI
             Path: /api/projects/{id}
             Method: PUT
+
+  UpdateProjectNameFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: go/
+      Handler: bootstrap
+      Events:
+        UpdateProjectName:
+          Type: Api
+          Properties:
+            RestApiId: !Ref XZeroAPI
+            Path: /api/projects/{id}
+            Method: PATCH
+
+  AddProjectMemberFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: go/
+      Handler: bootstrap
+      Events:
+        AddProjectMember:
+          Type: Api
+          Properties:
+            RestApiId: !Ref XZeroAPI
+            Path: /api/projects/{id}/members
+            Method: POST
+
+  RemoveProjectMemberFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: go/
+      Handler: bootstrap
+      Events:
+        RemoveProjectMember:
+          Type: Api
+          Properties:
+            RestApiId: !Ref XZeroAPI
+            Path: /api/projects/{id}/members/{did}
+            Method: DELETE
+
+  UpdateProjectMemberRoleFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: go/
+      Handler: bootstrap
+      Events:
+        UpdateProjectMemberRole:
+          Type: Api
+          Properties:
+            RestApiId: !Ref XZeroAPI
+            Path: /api/projects/{id}/members/{did}
+            Method: PATCH
 
   # App Functions
   ListAppsFunction:

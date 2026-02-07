@@ -13,7 +13,7 @@ import (
 )
 
 func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	fmt.Println("=== GetProfile Handler Started ===")
+	fmt.Println("=== SearchUsers Handler Started ===")
 	
 	// Handle CORS preflight
 	if request.HTTPMethod == "OPTIONS" {
@@ -40,37 +40,53 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 	if authHeader == "" {
 		authHeader = request.Headers["authorization"]
 	}
-	fmt.Printf("Auth header: %s\n", authHeader)
 
 	tokenString, err := auth.ExtractTokenFromHeader(authHeader)
 	if err != nil {
 		fmt.Printf("Token extraction error: %v\n", err)
 		return response.Error(401, "Invalid authorization header")
 	}
-	fmt.Printf("Token extracted: %s...\n", tokenString[:20])
 
-	claims, err := auth.ValidateToken(tokenString)
+	_, err = auth.ValidateToken(tokenString)
 	if err != nil {
 		fmt.Printf("Token validation error: %v\n", err)
 		return response.Error(401, "Invalid or expired token")
 	}
-	fmt.Printf("Token validated, DID: %s\n", claims.DID)
 
-	// Query user profile
+	// Get search query
+	query := request.QueryStringParameters["q"]
+	if query == "" {
+		return response.Error(400, "Search query is required")
+	}
+	fmt.Printf("Search query: %s\n", query)
+
+	// Search users by username or email
 	pool := db.GetPool()
-	var user models.User
-	err = pool.QueryRow(ctx,
-		"SELECT did, email, username, eth_address, COALESCE(bio, ''), COALESCE(profession_tags, '{}'), created_at, updated_at FROM users WHERE did = $1",
-		claims.DID,
-	).Scan(&user.DID, &user.Email, &user.Username, &user.EthAddress, &user.Bio, &user.ProfessionTags, &user.CreatedAt, &user.UpdatedAt)
-
+	rows, err := pool.Query(ctx,
+		`SELECT did, username, email, COALESCE(profession_tags, '{}') 
+		FROM users 
+		WHERE username ILIKE $1 OR email ILIKE $1 
+		LIMIT 10`,
+		"%"+query+"%",
+	)
 	if err != nil {
 		fmt.Printf("Database query error: %v\n", err)
-		return response.Error(404, "User not found")
+		return response.Error(500, "Failed to search users")
 	}
-	fmt.Printf("User found: %s\n", user.Username)
+	defer rows.Close()
 
-	return response.Success(user)
+	var users []models.UserSearchResult
+	for rows.Next() {
+		var user models.UserSearchResult
+		if err := rows.Scan(&user.DID, &user.Username, &user.Email, &user.ProfessionTags); err != nil {
+			fmt.Printf("Row scan error: %v\n", err)
+			continue
+		}
+		users = append(users, user)
+	}
+
+	fmt.Printf("Found %d users\n", len(users))
+	return response.Success(users)
 }
 
 func main() {

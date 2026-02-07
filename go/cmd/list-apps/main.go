@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -54,14 +55,14 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 	// Query apps for this project
 	// Include: global apps + project-specific apps - closed apps
 	rows, err := pool.Query(ctx, `
-		SELECT DISTINCT a.app_id, a.app_name, a.app_description, a.emoji, a.url, a.is_global, u.username
+		SELECT DISTINCT a.app_id, a.app_name, a.app_description, a.emoji, a.url, a.is_global, u.username, a.created_at
 		FROM apps a
 		JOIN users u ON a.created_by_did = u.did
 		LEFT JOIN app_projects ap ON a.app_id = ap.app_id
 		LEFT JOIN project_app_settings pas ON a.app_id = pas.app_id AND pas.project_id = $1
 		WHERE (a.is_global = true OR ap.project_id = $1)
 		  AND (pas.is_closed IS NULL OR pas.is_closed = false)
-		ORDER BY a.app_id DESC
+		ORDER BY a.created_at ASC
 	`, projectID)
 
 	if err != nil {
@@ -72,7 +73,8 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 	var apps []models.AppWithCreator
 	for rows.Next() {
 		var app models.AppWithCreator
-		err := rows.Scan(&app.AppID, &app.AppName, &app.AppDescription, &app.Emoji, &app.URL, &app.IsGlobal, &app.CreatedBy)
+		var createdAt time.Time // Throwaway variable for ORDER BY field
+		err := rows.Scan(&app.AppID, &app.AppName, &app.AppDescription, &app.Emoji, &app.URL, &app.IsGlobal, &app.CreatedBy, &createdAt)
 		if err != nil {
 			return response.Error(500, "Failed to scan app")
 		}
